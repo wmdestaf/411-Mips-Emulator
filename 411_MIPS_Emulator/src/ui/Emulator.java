@@ -2,6 +2,8 @@ package ui;
 
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Scanner;
 
@@ -117,6 +119,44 @@ public class Emulator {
 		return array;
 	}
 	
+	//not particularly portable
+	private void serialize(int[] array, String fname) {
+		FileOutputStream f = null;
+		try {
+			f = new FileOutputStream(new File(fname));
+		} catch (FileNotFoundException | SecurityException e) {
+			System.err.println("Could not open file for writing: " + fname);
+			System.exit(1);
+		}
+		
+		StringBuilder line;
+		for(int i = 0; i < array.length; ++i) {
+			line = new StringBuilder(32);
+			int mask = 0x80000000;
+			for(int j = 0; j < 32; ++j) {
+				char to = (array[i] & mask) == 0 ? '0' : '1';
+				line.append(to);
+				mask >>>= 1;
+			}
+			if(i != array.length - 1) //no newline at end of file
+				line.append('\n');
+			
+			try {
+				f.write(line.toString().getBytes());
+			} catch (IOException e) {
+				e.printStackTrace();
+				System.exit(1); //integrity of emulation results has been violated
+			}
+		}
+		
+		try {
+			f.close();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
+	
+	
 	private void setupAndRun(String[] args) {
 		instructions = cutByte(load_input(args[0], 8, 0));
 		memory       = cutInt (load_input(args[1], 32, 32));
@@ -126,6 +166,9 @@ public class Emulator {
 		do {
 			e.operate(instructions, memory, registers);
 		} while(!e.isStopped());
+		
+		serialize(memory,    "Memory.txt");
+		serialize(registers, "Registers.txt");
 		
 		assert Boolean.TRUE;
 	}

@@ -16,8 +16,9 @@ public class Executor {
 		return stopped;
 	}
 	
-	private Type getType(int high8) {
-		int opcode = high8 >> 2;
+	private Type getType(byte high8) {
+		//consequence of java not having byte arithmetic...
+		byte opcode = (byte)((high8 & 0xFF) >>> 2); 
 		switch(opcode) {
 			case 0x00: return Type.R;
 			case 0x02: return Type.J;
@@ -95,6 +96,9 @@ public class Executor {
 		
 		//execute!
 		//execute(instr_type, args);
+		if(instr_type == Type.HALT)
+			stopped = true;
+		
 		assert Boolean.TRUE;
 		
 		PC += 4;
